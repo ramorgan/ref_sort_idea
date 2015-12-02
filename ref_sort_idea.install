@@ -1,0 +1,74 @@
+<?php
+/**
+ * Implements hook_schema().
+ */
+function ref_sort_idea_schema() {
+  $schema = array();
+
+  $schema['ref_sort_idea_entity'] = array(
+    'description' => 'Long description',
+
+    //hook_schema_item_export
+
+    'fields' => array(
+      // In case of CTools exportable the reserved field names are:
+      // - export_module
+      // - export_type
+      // - api_version
+      'id' => array(
+        'description' => 'Primary key of the Project entity',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'title' => array(
+        'type' => 'text',
+        'size' => 'normal',
+        'length' => 255,
+        'serialize' => FALSE,
+        'description' => 'Title of the entity',
+      ),
+      'parent_bundle' => array(
+        'type' => 'text',
+        'size' => 'normal',
+        'length' => 255,
+        'serialize' => FALSE,
+        'description' => 'Long description',
+      ),
+      'child_bundle' => array(
+        'type' => 'text',
+        'size' => 'normal',
+        'length' => 255,
+        'serialize' => FALSE,
+        'description' => 'Long description',
+      ),
+      'ref_field' => array(
+        'type' => 'text',
+        'size' => 'normal',
+        'length' => 255,
+        'serialize' => FALSE,
+        'description' => 'Name of the referencing field.',
+      ),
+      'display_mode' => array(
+        'type' => 'text',
+        'size' => 'normal',
+        'length' => 255,
+        'serialize' => FALSE,
+        'description' => 'Long description',
+      ),
+      'number_per_page' => array(
+        'type' => 'int',
+        'size' => 'normal',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 5,
+        'description' => 'How many children to display.',
+      ),
+      //hook_schema_item_fields_
+    ),
+    'primary key' => array('id'),
+  );
+
+  return $schema;
+}
+/**/

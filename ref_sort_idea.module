@@ -18,6 +18,11 @@ function ref_sort_idea_menu() {
     'access arguments' => array('access administration pages'),
     'type' => MENU_NORMAL_ITEM,
   );
+  $items['ref_test'] = array(
+    'title' => 'Our ref demo',
+    'page callback' => 'ref_sort_idea_ref_test_page',
+    'access arguments' => array('access content'),
+  );
 
   return $items;
 }
@@ -30,6 +35,12 @@ function ref_sort_idea_config_page($form, &$form_state) {
     '#size' => 2,
     '#maxlength' => 2,
     '#description' => t('The maximum number of links to display in the block.'),
+    '#required' => TRUE,
+  );
+  $form['ref_sort_idea_parent_bundle'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Parent bundle name'),
+    '#default_value' => variable_get('ref_sort_idea_parent_bundle', ''),
     '#required' => TRUE,
   );
   //child bundle(s)
@@ -118,8 +129,12 @@ function ref_sort_idea_theme() {
 
 
 function ref_sort_idea_sort_by_ref_data() {
+  $output = [];
   //get current parent node
   $parent = menu_get_object();
+  if (empty($parent)) {
+    return FALSE;
+  }
   $parent = entity_metadata_wrapper('node', $parent);
   //get list of referenced nodes
   $list = _ref_sort_idea_get_children($parent, 'field_parent_to_child_ref', 'child');
@@ -128,6 +143,7 @@ function ref_sort_idea_sort_by_ref_data() {
   $output = array();
   $output['#theme'] = 'ref_sort_idea_sort_by_ref_theme';
   $output['#data']['nodes'] = $list;
+
   return $output;
 }
 
@@ -139,7 +155,14 @@ function ref_sort_idea_sort_by_ref_data() {
  * @todo accept array for bundle
  */
 function _ref_sort_idea_get_children(EntityMetadataWrapper $parent, $field_name, $bundle) {
-  $list = $parent->{$field_name}->raw();
+  $list = [];
+  try {
+    $list = $parent->{$field_name}->raw();
+  } catch (EntityMetadataWrapperException $e) {
+    watchdog('ref_sort_by_idea', 'EntityMetadataWrapperException: %msg', array(
+      '%msg' => $e->getMessage(),
+    ));
+  }
   $all_child = new EntityFieldQuery();
   $all_child = $all_child->propertyCondition('status', 1)
     ->entityCondition('entity_type', 'node')
@@ -160,4 +183,94 @@ function _ref_sort_idea_get_html($nodes, $view_mode, $langcode = NULL) {
     $rendered_nodes[] = node_view($temp, $view_mode, $langcode);
   }
   return $rendered_nodes;
+}
+
+/**
+ * Implements hook_entity_info().
+ */
+function ref_sort_idea_entity_info() {
+  $return = array();
+
+  $return['ref_sort_idea_entity'] = array(
+    'label' => t('Ref_sort_idea_entity'),
+    'base table' => 'ref_sort_idea_entity',
+    'entity keys' => array(
+      'id' => 'eid',
+      'name' => 'name',
+      'bundle' => 'bundle',
+    ),
+    'entity class' => 'RefSortIdeaEntity',
+//    'controller class' => 'Controller',
+    'module' => 'ref_sort_idea',
+    'fieldable' => FALSE,
+    'bundles' => array(
+      'ref_sort_idea_entity' => array('label' => 'Ref_sort_idea_entity'),
+    ),
+  );
+
+  return $return;
+}
+
+function ref_sort_idea_ref_test_page() {
+  $list = entity_load('ref_sort_idea_entity');
+  dpm($list);
+  $form = drupal_get_form('ref_sort_idea_create_entity_form');
+  return $form;
+}
+
+function ref_sort_idea_create_entity_form($form, &$form_state) {
+  $form['parent_bundle'] = array(
+    '#type' => 'select',
+    '#title' => t('Parent bundle name'),
+    '#options' => _ref_sort_idea_get_node_bundle(),
+    '#required' => TRUE,
+  );
+  //child bundle(s)
+  $form['child_bundle'] = array(
+    '#type' => 'select',
+    '#title' => t('Child bundle name'),
+    '#options' => _ref_sort_idea_get_node_bundle(),
+    '#required' => TRUE,
+  );
+  //field_name
+  $form['field_name'] = array(
+    '#type' => 'select',
+    '#title' => t('referencing field name'),
+    '#options' => _ref_sort_idea_get_field_names(),
+    '#required' => TRUE,
+  );
+  //display mode
+  $form['display_mode'] = array(
+    '#type' => 'select',
+    '#title' => t('Child node display mode'),
+    '#options' => _ref_sort_idea_get_display_modes(),
+    '#required' => TRUE,
+  );
+
+  $form['actions']['#type'] = 'actions';
+  $form['actions']['submit'] = array('#type' => 'submit', '#value' => t('Submit'));
+  return $form;
+}
+
+function ref_sort_idea_create_entity_form_submit($form, &$form_state) {
+  $values = $form_state['values'];
+  dpm($values);
+}
+
+function _ref_sort_idea_get_node_bundle() {
+  $node_bundles = field_info_bundles();
+  $node_bundles = array_keys($node_bundles['node']);
+  $node_bundles = array_combine($node_bundles, $node_bundles);
+  return $node_bundles;
+}
+
+function _ref_sort_idea_get_display_modes() {
+  $view_modes = entity_get_info('node');
+  $view_modes = array_keys($view_modes['view modes']);
+  return $view_modes;
+}
+
+function _ref_sort_idea_get_field_names() {
+  $fields = array_keys(field_info_field_map());
+  return $fields;
 }
