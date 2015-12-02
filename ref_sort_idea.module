@@ -4,7 +4,6 @@
  * @todo: complete doc blocks
  * @todo: I think this should be re done as entitys over blocks, but I'll get there.
  */
-
 /**
  * Implements hook_menu().
  */
@@ -198,6 +197,7 @@ function ref_sort_idea_entity_info() {
       'id' => 'id',
       'label' => 'title',
     ),
+    'entity class' => 'Entity',
     'module' => 'ref_sort_idea',
   );
 
@@ -205,10 +205,16 @@ function ref_sort_idea_entity_info() {
 }
 
 function ref_sort_idea_ref_test_page() {
-  $list = entity_load('ref_sort_idea_entity');
-  dpm($list, 'list');
-  $form = drupal_get_form('ref_sort_idea_create_entity_form');
-  return $form;
+  dpm(entity_get_info('ref_sort_idea_entity'), 'info');
+  dpm(entity_get_info(), 'all of it');
+  $list = entity_load('ref_sort_idea_entity', array(1, 2));
+  if (!isset($list[2])) {
+    $entity = entity_create('ref_sort_idea_entity', array('id' => 2,));
+    debug($entity);
+  }
+//  $form = drupal_get_form('ref_sort_idea_create_entity_form');
+//  return $form;
+  return '';
 }
 
 function ref_sort_idea_create_entity_form($form, &$form_state) {
@@ -252,6 +258,7 @@ function ref_sort_idea_create_entity_form($form, &$form_state) {
 }
 
 function ref_sort_idea_create_entity_form_submit($form, &$form_state) {
+
   $values = $form_state['values'];
   dpm($values);
   $entity = array(
@@ -263,7 +270,8 @@ function ref_sort_idea_create_entity_form_submit($form, &$form_state) {
     'display_mode' => 'teaser',
     'number_per_page' => 3,
   );
-  $entity = entity_create('ref_sort_idea_entity', array('id' => 2));
+  $entity = entity_create('ref_sort_idea_entity', array());
+
   debug($entity);
 }
 
