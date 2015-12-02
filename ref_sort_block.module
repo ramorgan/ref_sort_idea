@@ -1,0 +1,163 @@
+<?php
+/**
+ * @todo: put variables into data function
+ * @todo: complete doc blocks
+ * @todo: I think this should be re done as entitys over blocks, but I'll get there.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function ref_sort_idea_menu() {
+  $items = array();
+  $items['admin/config/development/ref_sort_idea_config'] = array(
+    'title' => 'Reference sort block config',
+//    'description' => '',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('ref_sort_idea_config_page'),
+    'access arguments' => array('access administration pages'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+
+  return $items;
+}
+
+function ref_sort_idea_config_page($form, &$form_state) {
+  $form['current_posts_max'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Maximum number of posts'),
+    '#default_value' => variable_get('current_posts_max', 3),
+    '#size' => 2,
+    '#maxlength' => 2,
+    '#description' => t('The maximum number of links to display in the block.'),
+    '#required' => TRUE,
+  );
+  //child bundle(s)
+  $form['ref_sort_idea_child_bundle'] = array(
+   '#type' => 'textfield',
+   '#title' => t('Child bundle name'),
+   '#default_value' => variable_get('ref_sort_idea_child_bundle', ''),
+   '#required' => TRUE,
+  );
+  //field_name
+  $form['ref_sort_idea_field_name'] = array(
+    '#type' => 'textfield',
+    '#title' => t('referencing field name'),
+    '#default_value' => variable_get('ref_sort_idea_field_name', ''),
+    '#required' => TRUE,
+    );
+  //display mode
+  $form['ref_sort_idea_display_mode'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Child node display mode'),
+    '#default_value' => variable_get('ref_sort_idea_display_mode', ''),
+    '#required' => TRUE,
+  );
+  //display langcode = null
+  $form['ref_sort_idea_langcode'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Language code'),
+    '#default_value' => variable_get('ref_sort_idea_child_bundle', ''),
+//    '#required' => TRUE,
+    '#disabled' => TRUE
+    );
+
+  return system_settings_form($form);
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function ref_sort_idea_block_info() {
+  $blocks = array();
+
+  $blocks['sort_by_ref'] = array(
+    'info' => t('Ref sort block: Sort by ref'),
+    'cache' => DRUPAL_CACHE_PER_ROLE,
+  );
+
+  return $blocks;
+}
+
+// hook_block_configure
+
+// hook_block_save
+
+/**
+ * Implements hook_block_view().
+ */
+function ref_sort_idea_block_view($delta = '') {
+  $block = array();
+
+  switch ($delta) {
+    case 'sort_by_ref':
+      $block['subject'] = '';
+      $block['content'] = ref_sort_idea_sort_by_ref_data();
+    break;
+  }
+
+  return $block;
+}
+
+
+/**
+ * Implements hook_theme().
+ */
+function ref_sort_idea_theme() {
+  $return = array();
+  $path = drupal_get_path('module', 'ref_sort_idea');
+  $return['ref_sort_idea_sort_by_ref_theme'] = array(
+    'variables' => array(
+      'data' => NULL,
+    ),
+    'template' => 'ref_sort_idea', // The name fo your .tpl.php file.
+    'path' => $path . '/theme',   // Path to the template in your module
+  );
+  return $return;
+}
+
+
+function ref_sort_idea_sort_by_ref_data() {
+  //get current parent node
+  $parent = menu_get_object();
+  $parent = entity_metadata_wrapper('node', $parent);
+  //get list of referenced nodes
+  $list = _ref_sort_idea_get_children($parent, 'field_parent_to_child_ref', 'child');
+  //get html for node
+  $list = _ref_sort_idea_get_html($list, 'teaser');
+  $output = array();
+  $output['#theme'] = 'ref_sort_idea_sort_by_ref_theme';
+  $output['#data']['nodes'] = $list;
+  return $output;
+}
+
+/**
+ * @param \EntityMetadataWrapper $parent
+ * @param $field_name
+ * @param $bundle
+ * @return array
+ * @todo accept array for bundle
+ */
+function _ref_sort_idea_get_children(EntityMetadataWrapper $parent, $field_name, $bundle) {
+  $list = $parent->{$field_name}->raw();
+  $all_child = new EntityFieldQuery();
+  $all_child = $all_child->propertyCondition('status', 1)
+    ->entityCondition('entity_type', 'node')
+    ->entityCondition('bundle', $bundle)
+    ->propertyOrderBy('created', 'DESC')
+    ->propertyCondition('nid', $list, 'NOT IN')
+    ->execute();
+  foreach ($all_child['node'] as $node) {
+    $list[] = $node->nid;
+  }
+  return $list;
+}
+
+function _ref_sort_idea_get_html($nodes, $view_mode, $langcode = NULL) {
+  $rendered_nodes = [];
+  foreach ($nodes as $nid) {
+    $temp = node_load($nid);
+    $rendered_nodes[] = node_view($temp, $view_mode, $langcode);
+  }
+  return $rendered_nodes;
+}

@@ -1,0 +1,6 @@
+name = Sort by ref block
+description = Provides a block displays all child nodes w/ refed nodes first.
+core = 7.x
+package = Block
+version = 7.x-1.0
+;configure = admin/config/development/ref_sort_block_config
