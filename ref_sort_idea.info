@@ -1,6 +1,6 @@
-name = Sort by ref block
+name = Sort by ref idea
 description = Provides a block displays all child nodes w/ refed nodes first.
 core = 7.x
-package = Block
+package = Other
 version = 7.x-1.0
-;configure = admin/config/development/ref_sort_block_config
+configure = admin/config/development/ref_sort_idea_config
